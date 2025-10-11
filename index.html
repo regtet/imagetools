@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>图片处理工具</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet"/>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .header h1 {
+    color: #333;
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 300;
+  }
+
+  .header p {
+    color: #666;
+    margin: 10px 0 0 0;
+    font-size: 1.1em;
+  }
+
+  .tabs {
+    display: flex;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 15px 30px;
+    background: #f8f9fa;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab.active {
+    background: #fff;
+    color: #0078d4;
+    border-bottom-color: #0078d4;
+  }
+
+  .tab:hover {
+    background: #e9ecef;
+    color: #0078d4;
+  }
+
+  .tab-content {
+    display: none;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    font-weight: 400;
+  }
+
+  .drop-area {
+    display: flex;
+    padding: 30px;
+    border: 2px dashed #bbb;
+    border-radius: 12px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    color: #666;
+  }
+
+  .drop-area.hover {
+    border-color: #0078d4;
+    background: #f0f8ff;
+    color: #0078d4;
+  }
+
+  .img-container {
+    width: 100%;
+    max-height: 400px;
+    margin: 20px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafafa;
+  }
+
+  .img-container img,
+  .img-container canvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    margin: auto;
+  }
+
+  input[type="number"], input[type="text"] {
+    width: 100px;
+    padding: 8px;
+    margin: 0 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    text-align: center;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+  }
+
+  input[type="number"]:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: #0078d4;
+  }
+
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .control-group label {
+    font-weight: 500;
+    color: #555;
+  }
+
+  button {
+    padding: 10px 20px;
+    margin: 8px;
+    border: none;
+    border-radius: 8px;
+    background-color: #0078d4;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  button:hover {
+    background-color: #005a9e;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  .batch-info {
+    background: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    color: #1976d2;
+    font-size: 14px;
+  }
+
+  .color-preview {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin: 0 5px;
+    border: 2px solid #ddd;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>图片处理工具</h1>
+    <p>专业的在线图片编辑工具，支持裁剪、颜色替换等功能</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="crop">图片裁剪</button>
+    <button class="tab" data-tab="replace">颜色替换</button>
+  </div>
+
+  <!-- 裁剪工具 -->
+  <div class="tab-content active" id="crop">
+    <h2>图片裁剪工具</h2>
+    <label class="drop-area" id="dropCrop">拖拽或点击上传图片
+      <input type="file" id="uploadCrop" accept="image/*">
+    </label>
+
+    <div class="img-container">
+      <img id="imageCrop" alt="请上传图片">
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>X:</label>
+        <input type="number" id="posX" value="55">
+      </div>
+      <div class="control-group">
+        <label>Y:</label>
+        <input type="number" id="posY" value="0">
+      </div>
+      <div class="control-group">
+        <label>W:</label>
+        <input type="number" id="width" value="341">
+      </div>
+      <div class="control-group">
+        <label>H:</label>
+        <input type="number" id="height" value="65">
+      </div>
+      <button id="applyCrop">应用裁剪</button>
+    </div>
+
+    <div style="margin: 15px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+      <button id="preset1" style="background: #6c757d;">预设1 (55,0,341,65)</button>
+      <button id="preset2" style="background: #6c757d;">预设2 (65,0,411,65)</button>
+    </div>
+
+    <div id="customPresets" style="margin: 15px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+      <!-- 自定义预设按钮将动态插入到这里 -->
+    </div>
+
+    <div style="margin: 15px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+      <button id="savePreset" style="background: #28a745;">保存当前值为预设</button>
+      <button id="managePresets" style="background: #17a2b8;">管理预设</button>
+    </div>
+
+    <button id="downloadCrop">下载裁剪后的图片</button>
+  </div>
+
+  <!-- 颜色替换工具 -->
+  <div class="tab-content" id="replace">
+    <h2>图片颜色替换工具</h2>
+    <div class="batch-info">
+      💡 支持批量处理：上传多张图片，系统会自动为每张图片应用相同的颜色替换设置
+    </div>
+
+    <label class="drop-area" id="dropReplace">拖拽或点击上传图片（支持多选）
+      <input type="file" id="uploadReplace" accept="image/*" multiple>
+    </label>
+
+    <div id="imageGrid" style="display: none; margin: 15px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h4 style="margin: 0; color: #333;">图片预览</h4>
+        <span id="uploadCount" style="background: #0078d4; color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500;"></span>
+      </div>
+      <div id="gridContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>原颜色:</label>
+        <span class="color-preview" id="fromColorPreview" style="background-color: #000000;"></span>
+        <input type="text" id="fromColor" value="#000000">
+      </div>
+      <div class="control-group">
+        <label>目标颜色:</label>
+        <span class="color-preview" id="toColorPreview" style="background-color: #ff0000;"></span>
+        <input type="text" id="toColor" value="#ff0000">
+      </div>
+      <div class="control-group">
+        <label>容差:</label>
+        <input type="number" id="tolerance" value="999" min="0" max="441">
+      </div>
+    </div>
+
+    <button id="downloadReplace">下载修改后的图片</button>
+    <button id="downloadAllReplace" style="display: none;">下载所有图片</button>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+/* ======= 标签页切换 ======= */
+document.addEventListener('DOMContentLoaded', function() {
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // 移除所有活动状态
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+
+      // 添加当前标签的活动状态
+      tab.classList.add('active');
+      const targetTab = tab.getAttribute('data-tab');
+      document.getElementById(targetTab).classList.add('active');
+    });
+  });
+});
+
+/* ======= 裁剪工具 ======= */
+let cropper, cropFileName = "cropped.png";
+const imageCrop = document.getElementById('imageCrop');
+const uploadCrop = document.getElementById('uploadCrop');
+const downloadCrop = document.getElementById('downloadCrop');
+const applyCrop = document.getElementById('applyCrop');
+const preset1Btn = document.getElementById('preset1');
+const preset2Btn = document.getElementById('preset2');
+const savePresetBtn = document.getElementById('savePreset');
+const managePresetsBtn = document.getElementById('managePresets');
+const customPresetsContainer = document.getElementById('customPresets');
+
+const posX = document.getElementById('posX');
+const posY = document.getElementById('posY');
+const width = document.getElementById('width');
+const height = document.getElementById('height');
+
+// 固定预设值
+const CROP_PRESETS = {
+  preset1: {
+    x: 55,
+    y: 0,
+    width: 341,
+    height: 65
+  },
+  preset2: {
+    x: 65,
+    y: 0,
+    width: 411,
+    height: 65
+  }
+};
+
+// 默认使用预设1
+const DEFAULT_CROP_VALUES = CROP_PRESETS.preset1;
+
+// localStorage key
+const CUSTOM_PRESETS_KEY = 'cropCustomPresets';
+
+// 从localStorage加载自定义预设
+function loadCustomPresets() {
+  const saved = localStorage.getItem(CUSTOM_PRESETS_KEY);
+  return saved ? JSON.parse(saved) : [];
+}
+
+// 保存自定义预设到localStorage
+function saveCustomPresets(presets) {
+  localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(presets));
+}
+
+// 渲染自定义预设按钮
+function renderCustomPresets() {
+  const customPresets = loadCustomPresets();
+  customPresetsContainer.innerHTML = '';
+
+  if (customPresets.length === 0) {
+    customPresetsContainer.style.display = 'none';
+    return;
+  }
+
+  customPresetsContainer.style.display = 'flex';
+
+  customPresets.forEach((preset, index) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'background: #fd7e14; position: relative; padding-right: 35px;';
+    btn.innerHTML = `${preset.name || '自定义' + (index + 1)} (${preset.x},${preset.y},${preset.width},${preset.height})`;
+
+    btn.addEventListener('click', () => {
+      applyPreset(preset);
+    });
+
+    customPresetsContainer.appendChild(btn);
+  });
+}
+
+function handleCropFile(file){
+  if (!file) return;
+  cropFileName = file.name.replace(/\.[^/.]+$/, "") + ".png";
+  const url = URL.createObjectURL(file);
+  imageCrop.src = url;
+
+  if (cropper) cropper.destroy();
+  cropper = new Cropper(imageCrop, {
+    aspectRatio: NaN,
+    viewMode: 1,
+    autoCropArea: 0.3,
+    crop(event) {
+      posX.value = Math.round(event.detail.x);
+      posY.value = Math.round(event.detail.y);
+      width.value = Math.round(event.detail.width);
+      height.value = Math.round(event.detail.height);
+    },
+    ready() {
+      cropper.setData(DEFAULT_CROP_VALUES);
+    }
+  });
+}
+
+uploadCrop.addEventListener('change', e => handleCropFile(e.target.files[0]));
+
+// 拖拽上传
+const dropCrop = document.getElementById('dropCrop');
+dropCrop.addEventListener('dragover', e => { e.preventDefault(); dropCrop.classList.add('hover'); });
+dropCrop.addEventListener('dragleave', e => { e.preventDefault(); dropCrop.classList.remove('hover'); });
+dropCrop.addEventListener('drop', e => {
+  e.preventDefault();
+  dropCrop.classList.remove('hover');
+  const file = e.dataTransfer.files[0];
+  handleCropFile(file);
+});
+
+applyCrop.addEventListener('click', () => {
+  if (!cropper) {
+    alert("请先上传图片");
+    return;
+  }
+
+  const x = parseInt(posX.value) || 0;
+  const y = parseInt(posY.value) || 0;
+  const w = parseInt(width.value) || 100;
+  const h = parseInt(height.value) || 100;
+
+  cropper.setData({ x, y, width: w, height: h });
+});
+
+downloadCrop.addEventListener('click', () => {
+  if (!cropper) return alert("请先上传图片");
+  const canvas = cropper.getCroppedCanvas();
+  canvas.toBlob(blob => {
+    const link = document.createElement('a');
+    link.download = cropFileName;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+  });
+});
+
+// 应用预设值的通用函数
+function applyPreset(presetValues) {
+  // 更新输入框值
+  posX.value = presetValues.x;
+  posY.value = presetValues.y;
+  width.value = presetValues.width;
+  height.value = presetValues.height;
+
+  // 如果有图片，应用裁剪
+  if (cropper) {
+    cropper.setData(presetValues);
+  }
+}
+
+// 预设1按钮
+preset1Btn.addEventListener('click', () => {
+  applyPreset(CROP_PRESETS.preset1);
+});
+
+// 预设2按钮
+preset2Btn.addEventListener('click', () => {
+  applyPreset(CROP_PRESETS.preset2);
+});
+
+// 保存当前值为预设
+savePresetBtn.addEventListener('click', () => {
+  const name = prompt('请输入预设名称：', '我的预设');
+  if (!name) return;
+
+  const newPreset = {
+    name: name,
+    x: parseInt(posX.value) || 0,
+    y: parseInt(posY.value) || 0,
+    width: parseInt(width.value) || 100,
+    height: parseInt(height.value) || 100
+  };
+
+  const customPresets = loadCustomPresets();
+  customPresets.push(newPreset);
+  saveCustomPresets(customPresets);
+  renderCustomPresets();
+
+  alert('预设已保存！');
+});
+
+// 管理预设
+managePresetsBtn.addEventListener('click', () => {
+  const customPresets = loadCustomPresets();
+
+  if (customPresets.length === 0) {
+    alert('暂无自定义预设');
+    return;
+  }
+
+  let message = '当前自定义预设列表：\n\n';
+  customPresets.forEach((preset, index) => {
+    message += `${index + 1}. ${preset.name} (${preset.x},${preset.y},${preset.width},${preset.height})\n`;
+  });
+  message += '\n输入要删除的预设编号（多个用逗号分隔），或点击取消返回：';
+
+  const input = prompt(message);
+  if (!input) return;
+
+  const indexesToDelete = input.split(',').map(i => parseInt(i.trim()) - 1).filter(i => i >= 0 && i < customPresets.length);
+
+  if (indexesToDelete.length === 0) {
+    alert('没有有效的编号');
+    return;
+  }
+
+  // 从后往前删除，避免索引变化
+  indexesToDelete.sort((a, b) => b - a).forEach(index => {
+    customPresets.splice(index, 1);
+  });
+
+  saveCustomPresets(customPresets);
+  renderCustomPresets();
+
+  alert(`已删除 ${indexesToDelete.length} 个预设`);
+});
+
+// 页面加载时渲染自定义预设
+renderCustomPresets();
+
+/* ======= 颜色替换工具 ======= */
+let uploadedFiles = [];
+let currentFileIndex = 0;
+let processedImages = [];
+
+const uploadReplace = document.getElementById("uploadReplace");
+const fromColor = document.getElementById("fromColor");
+const toColor = document.getElementById("toColor");
+const toleranceInput = document.getElementById("tolerance");
+const downloadReplace = document.getElementById("downloadReplace");
+const downloadAllReplace = document.getElementById("downloadAllReplace");
+const fromColorPreview = document.getElementById("fromColorPreview");
+const toColorPreview = document.getElementById("toColorPreview");
+const imageGrid = document.getElementById("imageGrid");
+const gridContainer = document.getElementById("gridContainer");
+const uploadCount = document.getElementById("uploadCount");
+
+// 颜色预览更新
+function updateColorPreviews() {
+  fromColorPreview.style.backgroundColor = fromColor.value;
+  toColorPreview.style.backgroundColor = toColor.value;
+}
+
+fromColor.addEventListener('input', updateColorPreviews);
+toColor.addEventListener('input', updateColorPreviews);
+
+// 实时颜色替换 - 处理所有图片
+function applyColorReplace() {
+  if (uploadedFiles.length === 0) return;
+
+  // 为每张图片创建处理后的canvas
+  uploadedFiles.forEach((file, index) => {
+    const img = new Image();
+    img.onload = () => {
+      // 创建临时canvas进行处理
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+      tempCtx.drawImage(img, 0, 0);
+
+      // 获取图像数据
+      const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      const data = imgData.data;
+
+      // 颜色替换处理
+      const [fr, fg, fb] = hexToRgb(fromColor.value);
+      const [tr, tg, tb] = hexToRgb(toColor.value);
+      const tolerance = parseInt(toleranceInput.value) || 0;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const dr = data[i] - fr;
+        const dg = data[i+1] - fg;
+        const db = data[i+2] - fb;
+        const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+
+        if (dist <= tolerance) {
+          data[i] = tr;
+          data[i+1] = tg;
+          data[i+2] = tb;
+        }
+      }
+
+      // 应用处理后的图像数据
+      tempCtx.putImageData(imgData, 0, 0);
+
+      // 保存处理后的图片数据
+      processedImages[index] = tempCanvas.toDataURL("image/png");
+
+      // 更新网格中对应图片的显示
+      updateGridImage(index, processedImages[index]);
+    };
+
+    img.onerror = () => {
+      console.error('图片加载失败:', file.name);
+    };
+
+    const url = URL.createObjectURL(file);
+    img.src = url;
+  });
+}
+
+// 更新网格中指定图片的显示
+function updateGridImage(index, processedImageData) {
+  const gridItems = gridContainer.children;
+  if (gridItems[index]) {
+    const img = gridItems[index].querySelector('img');
+    if (img && processedImageData) {
+      img.src = processedImageData;
+    }
+  }
+}
+
+// 防抖函数
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// 创建防抖的颜色替换函数
+const debouncedApplyColorReplace = debounce(applyColorReplace, 100);
+
+// 监听颜色和容差变化，实时应用替换
+fromColor.addEventListener('input', debouncedApplyColorReplace);
+toColor.addEventListener('input', debouncedApplyColorReplace);
+toleranceInput.addEventListener('input', debouncedApplyColorReplace);
+
+function handleReplaceFiles(files) {
+  console.log('上传文件数量:', files.length);
+
+  if (!files || files.length === 0) {
+    console.log('没有文件上传');
+    return;
+  }
+
+  // 验证文件类型
+  const validFiles = Array.from(files).filter(file => {
+    const isValid = file.type.startsWith('image/');
+    if (!isValid) {
+      console.warn('无效文件类型:', file.name, file.type);
+    }
+    return isValid;
+  });
+
+  if (validFiles.length === 0) {
+    alert('请上传有效的图片文件');
+    return;
+  }
+
+  uploadedFiles = validFiles;
+  processedImages = new Array(validFiles.length);
+  currentFileIndex = 0;
+
+  console.log('有效文件数量:', uploadedFiles.length);
+
+  // 显示图片网格
+  imageGrid.style.display = 'block';
+  updateImageGrid();
+
+  if (validFiles.length > 1) {
+    downloadAllReplace.style.display = 'inline-block';
+  } else {
+    downloadAllReplace.style.display = 'none';
+  }
+
+  applyColorReplace();
+}
+
+function updateImageGrid() {
+  // 更新上传总数
+  uploadCount.textContent = `已上传 ${uploadedFiles.length} 张`;
+
+  gridContainer.innerHTML = '';
+
+  uploadedFiles.forEach((file, index) => {
+    const gridItem = document.createElement('div');
+    gridItem.style.cssText = `
+      position: relative;
+      border: 2px solid ${index === currentFileIndex ? '#0078d4' : '#dee2e6'};
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    `;
+
+    const img = document.createElement('img');
+    img.style.cssText = `
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+    `;
+
+    const fileName = document.createElement('div');
+    fileName.style.cssText = `
+      padding: 8px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      background: rgba(255,255,255,0.9);
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    `;
+    fileName.textContent = file.name;
+
+    const statusIndicator = document.createElement('div');
+    statusIndicator.style.cssText = `
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: ${processedImages[index] ? '#28a745' : '#ffc107'};
+      border: 2px solid #fff;
+    `;
+
+    gridItem.appendChild(img);
+    gridItem.appendChild(fileName);
+    gridItem.appendChild(statusIndicator);
+
+    // 加载图片 - 如果已处理则显示处理后的图片，否则显示原图
+    if (processedImages[index]) {
+      img.src = processedImages[index];
+    } else {
+      const url = URL.createObjectURL(file);
+      img.src = url;
+    }
+
+    // 点击切换当前选中图片
+    gridItem.addEventListener('click', () => {
+      currentFileIndex = index;
+      updateImageGrid();
+    });
+
+    // 悬停效果
+    gridItem.addEventListener('mouseenter', () => {
+      if (index !== currentFileIndex) {
+        gridItem.style.borderColor = '#0078d4';
+        gridItem.style.transform = 'scale(1.02)';
+      }
+    });
+
+    gridItem.addEventListener('mouseleave', () => {
+      if (index !== currentFileIndex) {
+        gridItem.style.borderColor = '#dee2e6';
+        gridItem.style.transform = 'scale(1)';
+      }
+    });
+
+    gridContainer.appendChild(gridItem);
+  });
+}
+
+uploadReplace.addEventListener("change", e => handleReplaceFiles(e.target.files));
+
+const dropReplace = document.getElementById('dropReplace');
+dropReplace.addEventListener('dragover', e => { e.preventDefault(); dropReplace.classList.add('hover'); });
+dropReplace.addEventListener('dragleave', e => { e.preventDefault(); dropReplace.classList.remove('hover'); });
+dropReplace.addEventListener('drop', e => {
+  e.preventDefault();
+  dropReplace.classList.remove('hover');
+  handleReplaceFiles(e.dataTransfer.files);
+});
+
+function hexToRgb(hex) {
+  hex = hex.replace("#", "");
+  let bigint = parseInt(hex, 16);
+  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+}
+
+downloadReplace.addEventListener("click", () => {
+  if (uploadedFiles.length === 0) {
+    alert("请先上传图片");
+    return;
+  }
+
+  if (!processedImages[currentFileIndex]) {
+    alert("图片处理中，请稍候");
+    return;
+  }
+
+  const link = document.createElement("a");
+  const fileName = uploadedFiles[currentFileIndex].name.replace(/\.[^/.]+$/, "") + "_replaced.png";
+  link.download = fileName;
+  link.href = processedImages[currentFileIndex];
+  link.click();
+});
+
+downloadAllReplace.addEventListener("click", () => {
+  if (uploadedFiles.length === 0) {
+    alert("请先上传图片");
+    return;
+  }
+
+  // 检查是否所有图片都已处理
+  const allProcessed = processedImages.every(img => img !== undefined);
+  if (!allProcessed) {
+    alert("部分图片还在处理中，请稍候");
+    return;
+  }
+
+  // 批量下载所有图片
+  uploadedFiles.forEach((file, index) => {
+    setTimeout(() => {
+      const link = document.createElement("a");
+      const fileName = file.name.replace(/\.[^/.]+$/, "") + "_replaced.png";
+      link.download = fileName;
+      link.href = processedImages[index];
+      link.click();
+    }, index * 200); // 增加延迟避免浏览器阻止
+  });
+
+  alert(`开始下载 ${uploadedFiles.length} 张图片`);
+});
+</script>
+</body>
+</html>
