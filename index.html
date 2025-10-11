@@ -276,7 +276,8 @@
   <div class="tab-content" id="replace">
     <h2>图片颜色替换工具</h2>
     <div class="batch-info">
-      💡 支持批量处理：上传多张图片，系统会自动为每张图片应用相同的颜色替换设置
+      💡 支持批量处理：上传多张图片，系统会自动为每张图片应用相同的颜色替换设置<br>
+      🎨 支持多种颜色格式：十六进制（#ff0000）、命名颜色（red、blue）、RGB（rgb(255,0,0)）
     </div>
 
     <label class="drop-area" id="dropReplace">拖拽或点击上传图片（支持多选）
@@ -295,12 +296,12 @@
       <div class="control-group">
         <label>原颜色:</label>
         <span class="color-preview" id="fromColorPreview" style="background-color: #000000;"></span>
-        <input type="text" id="fromColor" value="#000000">
+        <input type="text" id="fromColor" value="#000000" placeholder="如: #000000 或 black">
       </div>
       <div class="control-group">
         <label>目标颜色:</label>
         <span class="color-preview" id="toColorPreview" style="background-color: #ff0000;"></span>
-        <input type="text" id="toColor" value="#ff0000">
+        <input type="text" id="toColor" value="#ff0000" placeholder="如: #ff0000 或 red">
       </div>
       <div class="control-group">
         <label>容差:</label>
@@ -572,8 +573,12 @@ const uploadCount = document.getElementById("uploadCount");
 
 // 颜色预览更新
 function updateColorPreviews() {
-  fromColorPreview.style.backgroundColor = fromColor.value;
-  toColorPreview.style.backgroundColor = toColor.value;
+  try {
+    fromColorPreview.style.backgroundColor = fromColor.value;
+    toColorPreview.style.backgroundColor = toColor.value;
+  } catch (e) {
+    console.warn('颜色格式可能不正确:', e);
+  }
 }
 
 fromColor.addEventListener('input', updateColorPreviews);
@@ -812,10 +817,39 @@ dropReplace.addEventListener('drop', e => {
   handleReplaceFiles(e.dataTransfer.files);
 });
 
+// 将颜色值转换为RGB数组，支持十六进制（#ff0000）和命名颜色（red）
+function colorToRgb(color) {
+  // 去除空格
+  color = color.trim();
+
+  // 如果是十六进制颜色
+  if (color.startsWith('#')) {
+    const hex = color.replace("#", "");
+    const bigint = parseInt(hex, 16);
+    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+  }
+
+  // 如果是rgb/rgba格式
+  if (color.startsWith('rgb')) {
+    const match = color.match(/\d+/g);
+    if (match && match.length >= 3) {
+      return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
+    }
+  }
+
+  // 对于命名颜色，使用canvas来转换
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 1, 1);
+  const imageData = ctx.getImageData(0, 0, 1, 1).data;
+  return [imageData[0], imageData[1], imageData[2]];
+}
+
+// 保留旧函数名以兼容
 function hexToRgb(hex) {
-  hex = hex.replace("#", "");
-  let bigint = parseInt(hex, 16);
-  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+  return colorToRgb(hex);
 }
 
 downloadReplace.addEventListener("click", () => {
