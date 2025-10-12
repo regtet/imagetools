@@ -216,13 +216,14 @@
 <body>
   <div class="header">
     <h1>图片处理工具</h1>
-    <p>专业的在线图片编辑工具，支持裁剪、颜色替换等功能</p>
+    <p>专业的在线图片编辑工具，支持裁剪、颜色替换、批量重命名、图片叠加等功能</p>
   </div>
 
   <div class="tabs">
     <button class="tab active" data-tab="crop">图片裁剪</button>
     <button class="tab" data-tab="replace">颜色替换</button>
     <button class="tab" data-tab="rename">批量重命名</button>
+    <button class="tab" data-tab="overlay">图片叠加</button>
   </div>
 
   <!-- 裁剪工具 -->
@@ -270,7 +271,10 @@
       <button id="managePresets" style="background: #17a2b8;">管理预设</button>
     </div>
 
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
     <button id="downloadCrop">下载裁剪后的图片</button>
+      <button id="resetCrop" style="background: #dc3545;">重置工具</button>
+    </div>
   </div>
 
   <!-- 颜色替换工具 -->
@@ -310,8 +314,11 @@
       </div>
     </div>
 
+    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
     <button id="downloadReplace">下载修改后的图片</button>
     <button id="downloadAllReplace" style="display: none;">下载所有图片</button>
+      <button id="resetReplace" style="background: #dc3545;">重置工具</button>
+    </div>
   </div>
 
   <!-- 批量重命名工具 -->
@@ -360,7 +367,65 @@
       </div>
     </div>
 
-    <button id="downloadAllRenamed" style="display: none; margin-top: 20px;">下载所有重命名后的图片</button>
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+      <button id="downloadAllRenamed" style="display: none;">下载所有重命名后的图片</button>
+      <button id="resetRename" style="background: #dc3545;">重置工具</button>
+    </div>
+  </div>
+
+  <!-- 图片叠加工具 -->
+  <div class="tab-content" id="overlay">
+    <h2>图片叠加工具</h2>
+    <div class="batch-info">
+      🖼️ 图片叠加：将一张图片叠加到另一张图片上，可自由调整位置和大小<br>
+      🎯 拖拽定位：直接拖拽叠加图片到目标位置<br>
+      📐 尺寸调整：拖拽四个角调整大小，自动保持纵横比
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+      <div>
+        <h4 style="margin: 0 0 10px 0; color: #333; text-align: center;">背景图片</h4>
+        <label class="drop-area" id="dropBackground" style="padding: 20px; font-size: 14px;">
+          拖拽或点击上传背景图
+          <input type="file" id="uploadBackground" accept="image/*">
+        </label>
+      </div>
+      <div>
+        <h4 style="margin: 0 0 10px 0; color: #333; text-align: center;">叠加图片</h4>
+        <label class="drop-area" id="dropOverlay" style="padding: 20px; font-size: 14px;">
+          拖拽或点击上传叠加图
+          <input type="file" id="uploadOverlay" accept="image/*">
+        </label>
+      </div>
+    </div>
+
+    <div style="position: relative; margin: 20px 0;">
+      <canvas id="overlayCanvas" style="max-width: 100%; border: 2px solid #ddd; border-radius: 8px; display: none; cursor: move;"></canvas>
+      <div id="overlayPlaceholder" style="padding: 60px; text-align: center; border: 2px dashed #ccc; border-radius: 8px; color: #999; background: #fafafa;">
+        请先上传背景图片和叠加图片
+      </div>
+    </div>
+
+    <div class="controls" style="flex-wrap: wrap;">
+      <button id="centerHorizontal" style="background: #6f42c1;" disabled>水平居中</button>
+      <button id="centerVertical" style="background: #e83e8c;" disabled>垂直居中</button>
+      <button id="centerBoth" style="background: #20c997;" disabled>完全居中</button>
+      <button id="resetOverlay" style="background: #fd7e14;" disabled>重置位置</button>
+      <button id="fitToBackground" style="background: #17a2b8;" disabled>适应背景</button>
+    </div>
+
+    <div class="controls" style="margin-top: 10px;">
+      <div class="control-group">
+        <label>叠加图不透明度:</label>
+        <input type="range" id="overlayOpacity" min="0" max="100" value="100" style="width: 150px;" disabled>
+        <span id="opacityValue" style="font-weight: 500; color: #0078d4;">100%</span>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+      <button id="downloadOverlay" disabled>下载合成后的图片</button>
+      <button id="resetOverlayTool" style="background: #dc3545;">重置工具</button>
+    </div>
   </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -603,6 +668,22 @@ managePresetsBtn.addEventListener('click', () => {
 
 // 页面加载时渲染自定义预设
 renderCustomPresets();
+
+// 重置裁剪工具
+const resetCropBtn = document.getElementById('resetCrop');
+resetCropBtn.addEventListener('click', () => {
+  if (cropper) {
+    cropper.destroy();
+    cropper = null;
+  }
+  imageCrop.src = '';
+  uploadCrop.value = '';
+  posX.value = 55;
+  posY.value = 0;
+  width.value = 341;
+  height.value = 65;
+  cropFileName = "cropped.png";
+});
 
 /* ======= 颜色替换工具 ======= */
 let uploadedFiles = [];
@@ -903,15 +984,8 @@ function hexToRgb(hex) {
 }
 
 downloadReplace.addEventListener("click", () => {
-  if (uploadedFiles.length === 0) {
-    alert("请先上传图片");
-    return;
-  }
-
-  if (!processedImages[currentFileIndex]) {
-    alert("图片处理中，请稍候");
-    return;
-  }
+  if (uploadedFiles.length === 0) return;
+  if (!processedImages[currentFileIndex]) return;
 
   const link = document.createElement("a");
   const fileName = uploadedFiles[currentFileIndex].name.replace(/\.[^/.]+$/, "") + "_replaced.png";
@@ -921,17 +995,11 @@ downloadReplace.addEventListener("click", () => {
 });
 
 downloadAllReplace.addEventListener("click", () => {
-  if (uploadedFiles.length === 0) {
-    alert("请先上传图片");
-    return;
-  }
+  if (uploadedFiles.length === 0) return;
 
   // 检查是否所有图片都已处理
   const allProcessed = processedImages.every(img => img !== undefined);
-  if (!allProcessed) {
-    alert("部分图片还在处理中，请稍候");
-    return;
-  }
+  if (!allProcessed) return;
 
   // 批量下载所有图片
   uploadedFiles.forEach((file, index) => {
@@ -941,10 +1009,24 @@ downloadAllReplace.addEventListener("click", () => {
       link.download = fileName;
       link.href = processedImages[index];
       link.click();
-    }, index * 200); // 增加延迟避免浏览器阻止
+    }, index * 200);
   });
+});
 
-  alert(`开始下载 ${uploadedFiles.length} 张图片`);
+// 重置颜色替换工具
+const resetReplaceBtn = document.getElementById('resetReplace');
+resetReplaceBtn.addEventListener('click', () => {
+  uploadedFiles = [];
+  processedImages = [];
+  currentFileIndex = 0;
+  uploadReplace.value = '';
+  imageGrid.style.display = 'none';
+  gridContainer.innerHTML = '';
+  downloadAllReplace.style.display = 'none';
+  fromColor.value = '#000000';
+  toColor.value = '#ff0000';
+  toleranceInput.value = 999;
+  updateColorPreviews();
 });
 
 /* ======= 批量重命名工具 ======= */
@@ -1109,10 +1191,7 @@ dropRename.addEventListener('drop', e => {
 
 // 下载所有重命名后的图片
 downloadAllRenamed.addEventListener("click", () => {
-  if (renameFiles.length === 0) {
-    alert("请先上传图片");
-    return;
-  }
+  if (renameFiles.length === 0) return;
 
   const format = targetFormat.value;
 
@@ -1125,8 +1204,444 @@ downloadAllRenamed.addEventListener("click", () => {
       link.click();
     }, index * 200);
   });
+});
 
-  alert(`开始下载 ${renameFiles.length} 张图片`);
+// 重置批量重命名工具
+const resetRenameBtn = document.getElementById('resetRename');
+resetRenameBtn.addEventListener('click', () => {
+  renameFiles = [];
+  uploadRename.value = '';
+  renameImageGrid.style.display = 'none';
+  renameGridContainer.innerHTML = '';
+  downloadAllRenamed.style.display = 'none';
+  targetFormat.value = 'png';
+});
+
+/* ======= 图片叠加工具 ======= */
+let backgroundImg = null;
+let overlayImg = null;
+let overlayX = 0;
+let overlayY = 0;
+let overlayWidth = 0;
+let overlayHeight = 0;
+let overlayOpacityValue = 1;
+let isDragging = false;
+let isResizing = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let resizeCorner = null;
+let overlayAspectRatio = 1;
+
+const uploadBackground = document.getElementById("uploadBackground");
+const uploadOverlayImg = document.getElementById("uploadOverlay");
+const dropBackground = document.getElementById("dropBackground");
+const dropOverlayArea = document.getElementById("dropOverlay");
+const overlayCanvas = document.getElementById("overlayCanvas");
+const overlayPlaceholder = document.getElementById("overlayPlaceholder");
+const ctx = overlayCanvas.getContext("2d");
+
+const centerHorizontalBtn = document.getElementById("centerHorizontal");
+const centerVerticalBtn = document.getElementById("centerVertical");
+const centerBothBtn = document.getElementById("centerBoth");
+const resetOverlayBtn = document.getElementById("resetOverlay");
+const fitToBackgroundBtn = document.getElementById("fitToBackground");
+const overlayOpacitySlider = document.getElementById("overlayOpacity");
+const opacityValueSpan = document.getElementById("opacityValue");
+const downloadOverlayBtn = document.getElementById("downloadOverlay");
+
+// 上传背景图片
+function handleBackgroundUpload(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      backgroundImg = img;
+      initializeCanvas();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// 上传叠加图片
+function handleOverlayUpload(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      overlayImg = img;
+      overlayAspectRatio = img.width / img.height;
+      initializeCanvas();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// 初始化画布
+function initializeCanvas() {
+  if (!backgroundImg) return;
+
+  // 设置画布大小为背景图片大小
+  overlayCanvas.width = backgroundImg.width;
+  overlayCanvas.height = backgroundImg.height;
+
+  overlayCanvas.style.display = 'block';
+  overlayPlaceholder.style.display = 'none';
+
+  // 如果有叠加图片，初始化其位置和大小
+  if (overlayImg) {
+    const scale = Math.min(
+      (backgroundImg.width * 0.5) / overlayImg.width,
+      (backgroundImg.height * 0.5) / overlayImg.height
+    );
+    overlayWidth = overlayImg.width * scale;
+    overlayHeight = overlayImg.height * scale;
+    overlayX = (backgroundImg.width - overlayWidth) / 2;
+    overlayY = (backgroundImg.height - overlayHeight) / 2;
+
+    // 启用所有控制按钮
+    centerHorizontalBtn.disabled = false;
+    centerVerticalBtn.disabled = false;
+    centerBothBtn.disabled = false;
+    resetOverlayBtn.disabled = false;
+    fitToBackgroundBtn.disabled = false;
+    overlayOpacitySlider.disabled = false;
+    downloadOverlayBtn.disabled = false;
+  }
+
+  drawCanvas();
+}
+
+// 绘制画布
+function drawCanvas() {
+  if (!backgroundImg) return;
+
+  ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+  // 绘制背景图片
+  ctx.drawImage(backgroundImg, 0, 0);
+
+  // 如果有叠加图片，绘制叠加图片及控制元素
+  if (overlayImg) {
+    // 绘制叠加图片
+    ctx.globalAlpha = overlayOpacityValue;
+    ctx.drawImage(overlayImg, overlayX, overlayY, overlayWidth, overlayHeight);
+    ctx.globalAlpha = 1;
+
+    // 绘制叠加图片的边框和控制点
+    ctx.strokeStyle = '#0078d4';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(overlayX, overlayY, overlayWidth, overlayHeight);
+
+    // 绘制四个角的控制点
+    const corners = [
+      { x: overlayX, y: overlayY, cursor: 'nw-resize' },
+      { x: overlayX + overlayWidth, y: overlayY, cursor: 'ne-resize' },
+      { x: overlayX, y: overlayY + overlayHeight, cursor: 'sw-resize' },
+      { x: overlayX + overlayWidth, y: overlayY + overlayHeight, cursor: 'se-resize' }
+    ];
+
+    ctx.fillStyle = '#0078d4';
+    corners.forEach(corner => {
+      ctx.fillRect(corner.x - 5, corner.y - 5, 10, 10);
+    });
+  }
+}
+
+// 获取鼠标在画布上的位置
+function getMousePos(e) {
+  const rect = overlayCanvas.getBoundingClientRect();
+  const scaleX = overlayCanvas.width / rect.width;
+  const scaleY = overlayCanvas.height / rect.height;
+
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+
+// 检查是否在控制点上
+function getResizeCorner(x, y) {
+  const corners = [
+    { x: overlayX, y: overlayY, name: 'nw' },
+    { x: overlayX + overlayWidth, y: overlayY, name: 'ne' },
+    { x: overlayX, y: overlayY + overlayHeight, name: 'sw' },
+    { x: overlayX + overlayWidth, y: overlayY + overlayHeight, name: 'se' }
+  ];
+
+  for (let corner of corners) {
+    const distance = Math.sqrt((x - corner.x) ** 2 + (y - corner.y) ** 2);
+    if (distance < 10) {
+      return corner.name;
+    }
+  }
+  return null;
+}
+
+// 鼠标按下事件
+overlayCanvas.addEventListener('mousedown', (e) => {
+  if (!backgroundImg || !overlayImg) return;
+
+  const pos = getMousePos(e);
+  resizeCorner = getResizeCorner(pos.x, pos.y);
+
+  if (resizeCorner) {
+    isResizing = true;
+    dragStartX = pos.x;
+    dragStartY = pos.y;
+  } else if (pos.x >= overlayX && pos.x <= overlayX + overlayWidth &&
+             pos.y >= overlayY && pos.y <= overlayY + overlayHeight) {
+    isDragging = true;
+    dragStartX = pos.x - overlayX;
+    dragStartY = pos.y - overlayY;
+  }
+});
+
+// 鼠标移动事件
+overlayCanvas.addEventListener('mousemove', (e) => {
+  if (!backgroundImg || !overlayImg) return;
+
+  const pos = getMousePos(e);
+
+  if (isDragging) {
+    overlayX = pos.x - dragStartX;
+    overlayY = pos.y - dragStartY;
+
+    // 限制在画布范围内
+    overlayX = Math.max(0, Math.min(overlayX, overlayCanvas.width - overlayWidth));
+    overlayY = Math.max(0, Math.min(overlayY, overlayCanvas.height - overlayHeight));
+
+    drawCanvas();
+  } else if (isResizing) {
+    const deltaX = pos.x - dragStartX;
+    const deltaY = pos.y - dragStartY;
+
+    let newWidth = overlayWidth;
+    let newHeight = overlayHeight;
+    let newX = overlayX;
+    let newY = overlayY;
+
+    // 根据拖拽的角计算新的尺寸，保持纵横比
+    if (resizeCorner === 'se') {
+      newWidth = overlayWidth + deltaX;
+      newHeight = newWidth / overlayAspectRatio;
+    } else if (resizeCorner === 'sw') {
+      newWidth = overlayWidth - deltaX;
+      newHeight = newWidth / overlayAspectRatio;
+      newX = overlayX + deltaX;
+    } else if (resizeCorner === 'ne') {
+      newWidth = overlayWidth + deltaX;
+      newHeight = newWidth / overlayAspectRatio;
+      newY = overlayY - (newHeight - overlayHeight);
+    } else if (resizeCorner === 'nw') {
+      newWidth = overlayWidth - deltaX;
+      newHeight = newWidth / overlayAspectRatio;
+      newX = overlayX + deltaX;
+      newY = overlayY - (newHeight - overlayHeight);
+    }
+
+    // 确保尺寸不小于10px
+    if (newWidth > 10 && newHeight > 10) {
+      overlayWidth = newWidth;
+      overlayHeight = newHeight;
+      overlayX = newX;
+      overlayY = newY;
+      dragStartX = pos.x;
+      dragStartY = pos.y;
+      drawCanvas();
+    }
+  } else {
+    // 更新鼠标样式
+    const corner = getResizeCorner(pos.x, pos.y);
+    if (corner) {
+      overlayCanvas.style.cursor = corner + '-resize';
+    } else if (pos.x >= overlayX && pos.x <= overlayX + overlayWidth &&
+               pos.y >= overlayY && pos.y <= overlayY + overlayHeight) {
+      overlayCanvas.style.cursor = 'move';
+    } else {
+      overlayCanvas.style.cursor = 'default';
+    }
+  }
+});
+
+// 鼠标释放事件
+overlayCanvas.addEventListener('mouseup', () => {
+  isDragging = false;
+  isResizing = false;
+  resizeCorner = null;
+});
+
+overlayCanvas.addEventListener('mouseleave', () => {
+  isDragging = false;
+  isResizing = false;
+  resizeCorner = null;
+});
+
+// 水平居中
+centerHorizontalBtn.addEventListener('click', () => {
+  overlayX = (overlayCanvas.width - overlayWidth) / 2;
+  drawCanvas();
+});
+
+// 垂直居中
+centerVerticalBtn.addEventListener('click', () => {
+  overlayY = (overlayCanvas.height - overlayHeight) / 2;
+  drawCanvas();
+});
+
+// 完全居中
+centerBothBtn.addEventListener('click', () => {
+  overlayX = (overlayCanvas.width - overlayWidth) / 2;
+  overlayY = (overlayCanvas.height - overlayHeight) / 2;
+  drawCanvas();
+});
+
+// 重置位置
+resetOverlayBtn.addEventListener('click', () => {
+  if (!backgroundImg || !overlayImg) return;
+
+  const scale = Math.min(
+    (backgroundImg.width * 0.5) / overlayImg.width,
+    (backgroundImg.height * 0.5) / overlayImg.height
+  );
+  overlayWidth = overlayImg.width * scale;
+  overlayHeight = overlayImg.height * scale;
+  overlayX = (backgroundImg.width - overlayWidth) / 2;
+  overlayY = (backgroundImg.height - overlayHeight) / 2;
+
+  drawCanvas();
+});
+
+// 适应背景
+fitToBackgroundBtn.addEventListener('click', () => {
+  if (!backgroundImg || !overlayImg) return;
+
+  const scale = Math.min(
+    backgroundImg.width / overlayImg.width,
+    backgroundImg.height / overlayImg.height
+  );
+  overlayWidth = overlayImg.width * scale;
+  overlayHeight = overlayImg.height * scale;
+  overlayX = (backgroundImg.width - overlayWidth) / 2;
+  overlayY = (backgroundImg.height - overlayHeight) / 2;
+
+  drawCanvas();
+});
+
+// 不透明度调整
+overlayOpacitySlider.addEventListener('input', () => {
+  overlayOpacityValue = overlayOpacitySlider.value / 100;
+  opacityValueSpan.textContent = overlayOpacitySlider.value + '%';
+  drawCanvas();
+});
+
+// 下载合成图片
+downloadOverlayBtn.addEventListener('click', () => {
+  if (!backgroundImg || !overlayImg) return;
+
+  // 创建最终合成的canvas
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = overlayCanvas.width;
+  finalCanvas.height = overlayCanvas.height;
+  const finalCtx = finalCanvas.getContext('2d');
+
+  // 绘制背景
+  finalCtx.drawImage(backgroundImg, 0, 0);
+
+  // 绘制叠加图片
+  finalCtx.globalAlpha = overlayOpacityValue;
+  finalCtx.drawImage(overlayImg, overlayX, overlayY, overlayWidth, overlayHeight);
+  finalCtx.globalAlpha = 1;
+
+  // 下载
+  finalCanvas.toBlob(blob => {
+    const link = document.createElement('a');
+    link.download = 'overlay_result.png';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+  });
+});
+
+// 文件上传事件
+uploadBackground.addEventListener('change', e => handleBackgroundUpload(e.target.files[0]));
+uploadOverlayImg.addEventListener('change', e => handleOverlayUpload(e.target.files[0]));
+
+// 拖拽上传 - 背景图片
+dropBackground.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropBackground.classList.add('hover');
+});
+
+dropBackground.addEventListener('dragleave', e => {
+  e.preventDefault();
+  dropBackground.classList.remove('hover');
+});
+
+dropBackground.addEventListener('drop', e => {
+  e.preventDefault();
+  dropBackground.classList.remove('hover');
+  handleBackgroundUpload(e.dataTransfer.files[0]);
+});
+
+// 拖拽上传 - 叠加图片
+dropOverlayArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropOverlayArea.classList.add('hover');
+});
+
+dropOverlayArea.addEventListener('dragleave', e => {
+  e.preventDefault();
+  dropOverlayArea.classList.remove('hover');
+});
+
+dropOverlayArea.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlayArea.classList.remove('hover');
+  handleOverlayUpload(e.dataTransfer.files[0]);
+});
+
+// 重置图片叠加工具
+const resetOverlayToolBtn = document.getElementById('resetOverlayTool');
+resetOverlayToolBtn.addEventListener('click', () => {
+  // 清空图片
+  backgroundImg = null;
+  overlayImg = null;
+  overlayX = 0;
+  overlayY = 0;
+  overlayWidth = 0;
+  overlayHeight = 0;
+  overlayOpacityValue = 1;
+  isDragging = false;
+  isResizing = false;
+  resizeCorner = null;
+  overlayAspectRatio = 1;
+
+  // 清空输入
+  uploadBackground.value = '';
+  uploadOverlayImg.value = '';
+
+  // 清空画布
+  ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  overlayCanvas.style.display = 'none';
+  overlayPlaceholder.style.display = 'block';
+
+  // 禁用按钮
+  centerHorizontalBtn.disabled = true;
+  centerVerticalBtn.disabled = true;
+  centerBothBtn.disabled = true;
+  resetOverlayBtn.disabled = true;
+  fitToBackgroundBtn.disabled = true;
+  overlayOpacitySlider.disabled = true;
+  downloadOverlayBtn.disabled = true;
+
+  // 重置不透明度
+  overlayOpacitySlider.value = 100;
+  opacityValueSpan.textContent = '100%';
 });
 </script>
 </body>
