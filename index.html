@@ -396,6 +396,7 @@
 
         <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
             <button id="downloadAllRenamed" style="display: none;">下载所有重命名后的图片</button>
+            <button id="downloadZipRenamed" style="display: none; background: #28a745;">下载压缩包</button>
             <button id="resetRename" style="background: #dc3545;">重置工具</button>
         </div>
     </div>
@@ -1436,6 +1437,7 @@
         const renameUploadCount = document.getElementById("renameUploadCount");
         const targetFormat = document.getElementById("targetFormat");
         const downloadAllRenamed = document.getElementById("downloadAllRenamed");
+        const downloadZipRenamed = document.getElementById("downloadZipRenamed");
         const formatBtns = document.querySelectorAll(".format-btn");
 
         // 格式按钮点击
@@ -1471,6 +1473,7 @@
 
             renameImageGrid.style.display = 'block';
             downloadAllRenamed.style.display = 'inline-block';
+            downloadZipRenamed.style.display = 'inline-block';
 
             updateRenameGrid();
         }
@@ -1603,6 +1606,30 @@
             });
         });
 
+        // 下载压缩包
+        downloadZipRenamed.addEventListener("click", async () => {
+            if (renameFiles.length === 0) return;
+            if (typeof JSZip === 'undefined') {
+                console.warn('JSZip 未加载，无法导出压缩包');
+                return;
+            }
+
+            const format = targetFormat.value;
+            const zip = new JSZip();
+
+            renameFiles.forEach(file => {
+                const newFileName = getNewFileName(file.name, format);
+                zip.file(newFileName, file);
+            });
+
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.download = 'renamed_images.zip';
+            link.href = URL.createObjectURL(zipBlob);
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        });
+
         // 重置批量重命名工具
         const resetRenameBtn = document.getElementById('resetRename');
         resetRenameBtn.addEventListener('click', () => {
@@ -1611,6 +1638,7 @@
             renameImageGrid.style.display = 'none';
             renameGridContainer.innerHTML = '';
             downloadAllRenamed.style.display = 'none';
+            downloadZipRenamed.style.display = 'none';
             targetFormat.value = 'png';
         });
 
